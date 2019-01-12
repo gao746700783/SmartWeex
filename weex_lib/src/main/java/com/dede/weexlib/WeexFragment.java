@@ -1,4 +1,4 @@
-package com.car300.weexlib;
+package com.dede.weexlib;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -17,6 +17,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.Toast;
+import com.dede.weex_public_lib.HotReloadActionListener;
 import com.taobao.weex.IWXRenderListener;
 import com.taobao.weex.WXSDKEngine;
 import com.taobao.weex.WXSDKInstance;
@@ -27,7 +28,7 @@ import com.taobao.weex.utils.WXFileUtils;
 import java.util.HashMap;
 import java.util.Map;
 
-import static com.car300.weexlib.WeexLib.registerModule;
+import static com.dede.weexlib.WeexLib.registerModule;
 
 /**
  * Created by hsh on 2019/1/9 11:12 AM
@@ -38,13 +39,10 @@ public class WeexFragment extends Fragment implements IWXRenderListener {
 
     private static final String DEFAULT_PAGE_NAME = "weex_page";
 
-    public static final String EXTRA_WEEX_URL = "extra_weex_url";
-    public static final String EXTRA_PAGE_NAME = "extra_page_name";
-
     public static WeexFragment newInstance(String url) {
         WeexFragment weexFragment = new WeexFragment();
         Bundle bundle = new Bundle();
-        bundle.putString(EXTRA_WEEX_URL, url);
+        bundle.putString(WeexLib.EXTRA_WEEX_URL, url);
         weexFragment.setArguments(bundle);
         return weexFragment;
     }
@@ -57,7 +55,9 @@ public class WeexFragment extends Fragment implements IWXRenderListener {
 
     private FrameLayout mRootView;
     private WXSDKInstance mWXSDKInstance;
-    private HotReloadManager mHotReloadManager;
+
+    @Nullable
+    DebugHelper debugHelper;
 
     private String mUrl = "http://localhost:8081/index.js";
     private Uri mUri;
@@ -76,27 +76,29 @@ public class WeexFragment extends Fragment implements IWXRenderListener {
     public void onAttach(Context context) {
         super.onAttach(context);
         mContext = context;
+        if (WeexLib.debug) {
+            debugHelper = DebugHelper.getInstance(mContext);
+        }
     }
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
         mRootView = new FrameLayout(mContext);
 
         createWeexInstance();
 
         Bundle bundle = getArguments();
         if (bundle != null) {
-            mPageName = bundle.getString(EXTRA_PAGE_NAME, DEFAULT_PAGE_NAME);
-            mUrl = bundle.getString(EXTRA_WEEX_URL, null);
+            mPageName = bundle.getString(WeexLib.EXTRA_PAGE_NAME, DEFAULT_PAGE_NAME);
+            mUrl = bundle.getString(WeexLib.EXTRA_WEEX_URL, null);
         }
 
         mUri = Uri.parse(mUrl);
 
         registerModule();
 
-        if (BuildConfig.DEBUG && !isLocalPage()) {
+        if (WeexLib.debug && !isLocalPage()) {
             remakeUrl();
             registerBroadcastReceiver();
         }
@@ -108,8 +110,7 @@ public class WeexFragment extends Fragment implements IWXRenderListener {
     }
 
     private void remakeUrl() {
-        String ip = Preferences.getInstance(mContext)
-                .getIp();
+        String ip = DebugHelper.getInstance(mContext).getIp();
         if (!TextUtils.isEmpty(ip)) {
             String url = ip + mUri.getPath();
             String query = mUri.getQuery();
@@ -122,18 +123,16 @@ public class WeexFragment extends Fragment implements IWXRenderListener {
     }
 
     public void connectSocket() {
-        if (!BuildConfig.DEBUG && !isLocalPage()) {
+        if (!WeexLib.debug || isLocalPage()) {
             Log.i(TAG, "Connect Socket: Not debug mode or local page");
             return;
         }
         String ws = "ws://" + mUri.getAuthority();
         Log.i(TAG, "Hot Reload socket: " + ws);
 
-        if (mHotReloadManager != null) {
-            mHotReloadManager.connect();
-            return;
-        }
-        mHotReloadManager = new HotReloadManager(ws, new HotReloadManager.ActionListener() {
+        if (debugHelper == null) return;
+
+        debugHelper.connectHotReload(ws, new HotReloadActionListener() {
             @Override
             public void reload() {
                 Toast.makeText(mContext, "Reload：" + mUrl, Toast.LENGTH_SHORT).show();
@@ -239,8 +238,8 @@ public class WeexFragment extends Fragment implements IWXRenderListener {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        if (mHotReloadManager != null) {
-            mHotReloadManager.destroy();
+        if (debugHelper != null) {
+            debugHelper.destroyHotReload();
         }
         destoryWeexInstance();
     }

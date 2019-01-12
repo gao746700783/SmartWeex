@@ -1,4 +1,4 @@
-package com.car300.weexlib;
+package com.dede.weexlib;
 
 import android.app.Application;
 import com.taobao.weex.InitConfig;
@@ -16,6 +16,9 @@ import java.util.Set;
  */
 public final class WeexLib {
 
+    public static final String EXTRA_WEEX_URL = "extra_weex_url";
+    public static final String EXTRA_PAGE_NAME = "extra_page_name";
+
     private static HashMap<String, Class<? extends WXModule>> modules = new HashMap<>();
 
     static void registerModule() {
@@ -30,6 +33,8 @@ public final class WeexLib {
         }
     }
 
+    static boolean debug = false;
+
     private WeexLib() {
     }
 
@@ -40,6 +45,7 @@ public final class WeexLib {
     public final static class Builder {
         private InitConfig.Builder mBuilder;
         private Application mApplication;
+
 
         public InitConfig.Builder getInitBuilder() {
             return mBuilder;
@@ -52,6 +58,11 @@ public final class WeexLib {
 
         public Builder setImageAdapter(IWXImgLoaderAdapter iwxImgLoaderAdapter) {
             mBuilder.setImgAdapter(iwxImgLoaderAdapter);
+            return this;
+        }
+
+        public Builder debug(boolean debug) {
+            WeexLib.debug = debug;
             return this;
         }
 

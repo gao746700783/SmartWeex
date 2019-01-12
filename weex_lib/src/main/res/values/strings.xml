@@ -1,10 +1,10 @@
 <resources>
     <string-array name="debug_dialog_item">
         <item>刷新</item>
-        <item>设置ip地址和端口号</item>
+        <item>自定义ip地址和端口号</item>
         <item>重新连接热加载socket</item>
     </string-array>
     <string name="ip_hint">http://192.168.0.1:8081</string>
-    <string name="toast_ip_error">ip错误</string>
+    <string name="toast_ip_error">ip输入错误</string>
     <string name="ip_dialog_title">scheme://host:port</string>
 </resources>

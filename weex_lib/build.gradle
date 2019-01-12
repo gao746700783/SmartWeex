@@ -1,18 +1,26 @@
 apply plugin: 'com.android.library'
+apply from: 'bintray.gradle'
 
 android {
-    compileSdkVersion 28
-    buildToolsVersion '28.0.3'
+    compileSdkVersion rootProject.ext.compileSdkVersion
 
     defaultConfig {
-        minSdkVersion 14
-        targetSdkVersion 26
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
         versionName "1.0"
     }
 
     buildTypes {
+        debug {
+            ndk {
+                abiFilters 'armeabi', 'armeabi-v7a', 'x86'
+            }
+        }
         release {
+            ndk {
+                abiFilters 'armeabi', 'armeabi-v7a'
+            }
             minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
@@ -20,16 +28,11 @@ android {
 }
 
 dependencies {
-    implementation "com.android.support:appcompat-v7:28.0.0"
-    implementation "com.android.support:support-v4:28.0.0"
-    implementation "com.android.support:recyclerview-v7:28.0.0"
-
-    // hot reload
-    debugImplementation 'com.squareup.okhttp3:okhttp:3.12.1'
-    debugImplementation 'com.squareup.okhttp3:mockwebserver:3.12.1'
-    debugImplementation 'com.squareup.okio:okio:2.1.0'
-
+    api "com.android.support:appcompat-v7:${supportVersion}"
+    api "com.android.support:support-v4:${supportVersion}"
+    api "com.android.support:recyclerview-v7:${supportVersion}"
     // weex sdk and fastjson
-    compile 'com.taobao.android:weex_sdk:0.18.0@aar'
+    api 'com.taobao.android:weex_sdk:0.18.0@aar'
     implementation 'com.alibaba:fastjson:1.1.46.android'
+    implementation project(":weex_public_lib")
 }

@@ -1,10 +1,11 @@
-package com.dede.weexlib
+package com.dede.demo
 
 import android.content.Intent
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.view.View
-import com.car300.weexlib.WeexActivity
+import com.dede.weexlib.WeexActivity
+import com.dede.weexlib.WeexLib
 
 class MainActivity : AppCompatActivity() {
 
@@ -14,6 +15,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun toWeexPage(v: View) {
-        startActivity(Intent(this, WeexActivity::class.java))
+        val intent = Intent(this, WeexActivity::class.java)
+        intent.putExtra(WeexLib.EXTRA_WEEX_URL, "http://192.168.1.8:8080/index.js")
+        startActivity(intent)
     }
 }
