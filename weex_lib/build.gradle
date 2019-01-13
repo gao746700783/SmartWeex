@@ -2,7 +2,7 @@ apply plugin: 'com.android.library'
 
 android {
     compileSdkVersion rootProject.ext.compileSdkVersion
-
+    buildToolsVersion rootProject.ext.buildToolsVersion
     defaultConfig {
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
@@ -20,7 +20,7 @@ android {
             ndk {
                 abiFilters 'armeabi', 'armeabi-v7a'
             }
-            minifyEnabled true
+            minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
@@ -33,14 +33,13 @@ dependencies {
     // weex sdk and fastjson
     api 'com.taobao.android:weex_sdk:0.18.0@aar'
     implementation 'com.alibaba:fastjson:1.1.46.android'
-    implementation project(":weex_public_lib")
 }
 
 apply plugin: 'com.github.dcendents.android-maven'
 apply plugin: 'com.jfrog.bintray'
 
 group = 'com.dede.weexlib'
-version = '0.0.2'
+version = '0.0.6'
 
 install {
     repositories {

@@ -2,7 +2,8 @@ package com.dede.weexlib;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
-import com.dede.weex_public_lib.HotReloadActionListener;
+import android.os.Handler;
+import android.os.Message;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
@@ -29,9 +30,8 @@ class DebugHelper {
     private Method putStringMethod;
 
     private Constructor<?> reloadConstructor;
-    private Method connectMethod;
-    private Method destroyMethod;
-    private Object hotReloadManager;
+    private Method hotReloadHandlerMethod;
+    private Handler hotReloadHandler;
 
     private DebugHelper(Context context) {
         if (!WeexLib.debug) return;
@@ -47,9 +47,9 @@ class DebugHelper {
 
         try {
             Class<?> classReload = Class.forName("com.dede.weex_lib_debug.HotReloadManager");
-            reloadConstructor = classReload.getConstructor(String.class, HotReloadActionListener.class);
-            connectMethod = classReload.getMethod("connect");
-            destroyMethod = classReload.getMethod("destroy");
+            reloadConstructor = classReload.getConstructor(Handler.class);
+            reloadConstructor.setAccessible(true);
+            hotReloadHandlerMethod = classReload.getMethod("getHotReloadHandler");
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -58,37 +58,32 @@ class DebugHelper {
     /**
      * 初始化热加载
      *
-     * @param ws       socket地址
-     * @param listener 刷新回调
+     * @param handler 刷新回调
      * @return
      */
-    private Object createHotReloadManager(String ws, HotReloadActionListener listener) {
+    private void initHotReloadManager(Handler handler) {
+        if (reloadConstructor == null || hotReloadHandlerMethod == null) return;
         try {
-            hotReloadManager = reloadConstructor.newInstance(ws, listener);
+            Object hotReloadManager = reloadConstructor.newInstance(handler);
+            hotReloadHandler = (Handler) hotReloadHandlerMethod.invoke(hotReloadManager);// 获取handler
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return hotReloadManager;
     }
 
     /**
      * 连接热加载
      *
-     * @param ws       socket地址
-     * @param listener 刷新回调
+     * @param ws      socket地址
+     * @param handler 刷新回调
      */
-    void connectHotReload(String ws, HotReloadActionListener listener) {
+    void connectHotReload(String ws, Handler handler) {
         if (!WeexLib.debug) return;
-        if (connectMethod == null) return;
-        if (hotReloadManager == null) {
-            hotReloadManager = createHotReloadManager(ws, listener);
+        if (hotReloadHandler == null) {
+            initHotReloadManager(handler);
         }
-        if (hotReloadManager == null) return;
-        try {
-            connectMethod.invoke(hotReloadManager);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        if (hotReloadHandler == null) return;
+        hotReloadHandler.sendMessage(Message.obtain(hotReloadHandler, 1, ws));
     }
 
     /**
@@ -96,13 +91,9 @@ class DebugHelper {
      */
     void destroyHotReload() {
         if (!WeexLib.debug) return;
-        if (hotReloadManager == null || destroyMethod == null) return;
-
-        try {
-            destroyMethod.invoke(hotReloadManager);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        if (hotReloadHandler == null) return;
+        hotReloadHandler.sendMessage(Message.obtain(hotReloadHandler, -1));
+        hotReloadHandler = null;
     }
 
     /**

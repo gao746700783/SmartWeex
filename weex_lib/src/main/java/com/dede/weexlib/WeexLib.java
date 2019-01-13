@@ -1,6 +1,7 @@
 package com.dede.weexlib;
 
 import android.app.Application;
+import android.support.annotation.Keep;
 import com.taobao.weex.InitConfig;
 import com.taobao.weex.WXSDKEngine;
 import com.taobao.weex.adapter.IWXImgLoaderAdapter;
@@ -14,6 +15,7 @@ import java.util.Set;
 /**
  * Created by hsh on 2019/1/9 11:03 AM
  */
+@Keep
 public final class WeexLib {
 
     public static final String EXTRA_WEEX_URL = "extra_weex_url";
@@ -42,6 +44,7 @@ public final class WeexLib {
         return new Builder(application);
     }
 
+    @Keep
     public final static class Builder {
         private InitConfig.Builder mBuilder;
         private Application mApplication;

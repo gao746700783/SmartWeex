@@ -1,1 +1,1 @@
-include ':app', ':weex_lib', ':weex_lib_debug', ':weex_public_lib'
+include ':app', ':weex_lib', ':weex_lib_debug'

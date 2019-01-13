@@ -1,10 +1,10 @@
 package com.dede.weex_lib_debug;
 
+import android.annotation.SuppressLint;
 import android.os.Handler;
-import android.os.Looper;
+import android.os.Message;
 import android.text.TextUtils;
 import android.util.Log;
-import com.dede.weex_public_lib.HotReloadActionListener;
 import okhttp3.*;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -17,32 +17,42 @@ class HotReloadManager {
 
     private static final String TAG = "HotReloadManager";
 
-    private HotReloadActionListener listener;
-    private String ws;
+    private Handler handler;
 
     private WebSocket session;
     private OkHttpClient client = new OkHttpClient.Builder()
             .build();
 
-    private Handler handler = new Handler(Looper.getMainLooper());
-
-    private void uiThread(Runnable runnable) {
-        handler.post(runnable);
-    }
-
-    public HotReloadManager(String ws, final HotReloadActionListener actionListener) {
-        if (TextUtils.isEmpty(ws) || actionListener == null) {
+    public HotReloadManager(Handler handler) {
+        if (handler == null) {
             Log.w(TAG, "Illegal arguments");
             return;
         }
-        this.listener = actionListener;
-        this.ws = ws;
-
-        connect();
+        this.handler = handler;
     }
 
-    public void connect() {
-        destroy();
+    @SuppressLint("HandlerLeak")
+    private Handler hotReloadHandler = new Handler() {
+        @Override
+        public void handleMessage(Message msg) {
+            switch (msg.what) {
+                case 1:
+                    String ws = (String) msg.obj;
+                    connect(ws);
+                    break;
+                case -1:
+                    destroy();
+                    break;
+            }
+        }
+    };
+
+    public Handler getHotReloadHandler() {
+        return hotReloadHandler;
+    }
+
+    private void connect(String ws) {
+        close();
 
         Request request = new Request.Builder()
                 .url(ws)
@@ -61,20 +71,10 @@ class HotReloadManager {
                     String method = rpcMessage.optString("method", null);
                     if (!TextUtils.isEmpty(method)) {
                         if ("WXReload".equals(method)) {
-                            uiThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    listener.reload();
-                                }
-                            });
+                            handler.sendEmptyMessage(1);
                         } else if ("WXReloadBundle".equals(method)) {
-                            final String bundleUrl = rpcMessage.optString("params", null);
-                            uiThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    listener.render(bundleUrl);
-                                }
-                            });
+                            String bundleUrl = rpcMessage.optString("params", null);
+                            handler.sendMessage(Message.obtain(handler, 2, bundleUrl));
                         }
                     }
                 } catch (JSONException e) {
@@ -94,9 +94,21 @@ class HotReloadManager {
         });
     }
 
-    public void destroy() {
+    private void close() {
         if (session == null) return;
         session.close(1001, "GOING_AWAY");
         session = null;
+    }
+
+    private void destroy() {
+        close();
+        if (handler != null) {
+            handler.removeCallbacksAndMessages(null);
+            handler = null;
+        }
+        if (hotReloadHandler != null) {
+            hotReloadHandler.removeCallbacksAndMessages(null);
+            hotReloadHandler = null;
+        }
     }
 }

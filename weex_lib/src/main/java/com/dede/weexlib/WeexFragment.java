@@ -1,11 +1,14 @@
 package com.dede.weexlib;
 
+import android.annotation.SuppressLint;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -17,7 +20,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.Toast;
-import com.dede.weex_public_lib.HotReloadActionListener;
 import com.taobao.weex.IWXRenderListener;
 import com.taobao.weex.WXSDKEngine;
 import com.taobao.weex.WXSDKInstance;
@@ -122,6 +124,7 @@ public class WeexFragment extends Fragment implements IWXRenderListener {
         }
     }
 
+    @SuppressLint("HandlerLeak")
     public void connectSocket() {
         if (!WeexLib.debug || isLocalPage()) {
             Log.i(TAG, "Connect Socket: Not debug mode or local page");
@@ -132,19 +135,22 @@ public class WeexFragment extends Fragment implements IWXRenderListener {
 
         if (debugHelper == null) return;
 
-        debugHelper.connectHotReload(ws, new HotReloadActionListener() {
+        debugHelper.connectHotReload(ws, new Handler() {
             @Override
-            public void reload() {
-                Toast.makeText(mContext, "Reload：" + mUrl, Toast.LENGTH_SHORT).show();
-                createWeexInstance();
-                renderPage();
-            }
-
-            @Override
-            public void render(final String bundleUrl) {
-                Toast.makeText(mContext, "Render：" + mUrl, Toast.LENGTH_SHORT).show();
-                createWeexInstance();
-                loadUrl(bundleUrl);
+            public void handleMessage(Message msg) {
+                switch (msg.what) {
+                    case 1:
+                        Toast.makeText(mContext, "Reload：" + mUrl, Toast.LENGTH_SHORT).show();
+                        createWeexInstance();
+                        renderPage();
+                        break;
+                    case 2:
+                        String bundleUrl = (String) msg.obj;
+                        Toast.makeText(mContext, "Render：" + mUrl, Toast.LENGTH_SHORT).show();
+                        createWeexInstance();
+                        loadUrl(bundleUrl);
+                        break;
+                }
             }
         });
     }
