@@ -14,6 +14,7 @@ class MyApplication : Application() {
         super.onCreate()
         WeexLib.with(this)
             .debug(BuildConfig.DEBUG)
+//            .addModule()
             .setImageAdapter { url, view, quality, strategy ->
                 if (view?.layoutParams == null) {
                     return@setImageAdapter
