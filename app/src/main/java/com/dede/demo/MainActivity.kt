@@ -4,8 +4,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.view.View
-import com.dede.weexlib.WeexActivity
-import com.dede.weexlib.WeexLib
+import com.smart.common.weex.ui.WeexPageActivity
 
 class MainActivity : AppCompatActivity() {
 
@@ -15,8 +14,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun toWeexPage(v: View) {
-        val intent = Intent(this, WeexActivity::class.java)
-        intent.putExtra(WeexLib.EXTRA_WEEX_URL, "http://192.168.1.8:8080/index.js")
+//        val intent = Intent(this, WeexActivity::class.java)
+//        intent.putExtra(WeexLib.EXTRA_WEEX_URL, "http://192.168.1.8:8080/index.js")
+//        startActivity(intent)
+        val intent = Intent(this, WeexPageActivity::class.java)
+        intent.putExtra(WeexPageActivity.EXTRA_URL, "http://192.168.0.67:8081/dist/modules/me.js")
         startActivity(intent)
     }
 }
