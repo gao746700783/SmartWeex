@@ -20,7 +20,8 @@ package com.smart.common.weex;
 
 import android.app.Application;
 import android.content.Context;
-import com.smart.common.weex.adapter.ImageAdapter;
+import android.util.Log;
+import com.smart.common.weex.adapter.DefaultImageAdapter;
 import com.taobao.weex.InitConfig;
 import com.taobao.weex.WXSDKEngine;
 import com.taobao.weex.adapter.IWXImgLoaderAdapter;
@@ -61,7 +62,7 @@ public final class WXCommonManager {
     }
 
     public void initWeex(Context context) {
-        initWeex(context,new ImageAdapter());
+        initWeex(context,new DefaultImageAdapter());
     }
 
     public void initWeex(Context context, IWXImgLoaderAdapter iwxImgLoaderAdapter) {
@@ -106,6 +107,7 @@ public final class WXCommonManager {
             try {
                 WXSDKEngine.registerComponent(component_name, component);
             } catch (WXException e) {
+                Log.e(TAG,e.getLocalizedMessage(),e);
                 e.printStackTrace();
             }
         }

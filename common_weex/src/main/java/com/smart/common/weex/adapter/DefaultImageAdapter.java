@@ -18,7 +18,6 @@
  */
 package com.smart.common.weex.adapter;
 
-import android.net.Uri;
 import android.text.TextUtils;
 import android.widget.ImageView;
 import com.bumptech.glide.Glide;
@@ -29,9 +28,9 @@ import com.taobao.weex.adapter.IWXImgLoaderAdapter;
 import com.taobao.weex.common.WXImageStrategy;
 import com.taobao.weex.dom.WXImageQuality;
 
-public class GlideImageAdapter implements IWXImgLoaderAdapter {
+public class DefaultImageAdapter implements IWXImgLoaderAdapter {
 
-    public GlideImageAdapter() {
+    public DefaultImageAdapter() {
     }
 
     @Override
@@ -53,12 +52,15 @@ public class GlideImageAdapter implements IWXImgLoaderAdapter {
             temp = "http:" + url;
         }
 
-        if (!TextUtils.isEmpty(strategy.placeHolder)) {
+        if (url.contains("gif")) {
+            Glide.with(WXEnvironment.getApplication())
+                    .asGif()
+                    .load(temp)
+                    .into(view);
+        } else {
             Glide.with(WXEnvironment.getApplication())
                     .load(temp)
                     .into(view);
-
-            view.setTag(strategy.placeHolder.hashCode(), Uri.parse(strategy.placeHolder));
         }
     }
 

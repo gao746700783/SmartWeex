@@ -14,11 +14,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun toWeexPage(v: View) {
-//        val intent = Intent(this, WeexActivity::class.java)
-//        intent.putExtra(WeexLib.EXTRA_WEEX_URL, "http://192.168.1.8:8080/index.js")
-//        startActivity(intent)
         val intent = Intent(this, WeexPageActivity::class.java)
-        intent.putExtra(WeexPageActivity.EXTRA_URL, "http://192.168.0.67:8081/dist/modules/me.js")
+//        intent.putExtra(WeexPageActivity.EXTRA_URL, "http://192.168.0.67:8081/dist/index.js")
+//        intent.putExtra(WeexPageActivity.EXTRA_URL, "http://192.168.0.67:8081/dist/modules/me.js")
+        intent.putExtra(WeexPageActivity.EXTRA_URL, "http://192.168.0.67:8081/dist/modules/page/webview.js")
         startActivity(intent)
     }
 }

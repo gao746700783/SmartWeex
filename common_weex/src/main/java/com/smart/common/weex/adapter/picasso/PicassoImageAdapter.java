@@ -16,13 +16,13 @@
 // * specific language governing permissions and limitations
 // * under the License.
 // */
-//package com.smart.common.weex.adapter;
+//package com.smart.common.weex.adapter.picasso;
 //
 //import android.net.Uri;
 //import android.os.Looper;
 //import android.text.TextUtils;
 //import android.widget.ImageView;
-//
+//import com.smart.common.weex.adapter.BlurTransformation;
 //import com.squareup.picasso.Callback;
 //import com.squareup.picasso.Picasso;
 //import com.taobao.weex.WXEnvironment;
@@ -32,9 +32,9 @@
 //import com.taobao.weex.common.WXImageStrategy;
 //import com.taobao.weex.dom.WXImageQuality;
 //
-//public class ImageAdapter implements IWXImgLoaderAdapter {
+//public class PicassoImageAdapter implements IWXImgLoaderAdapter {
 //
-//  public ImageAdapter() {
+//  public PicassoImageAdapter() {
 //  }
 //
 //  @Override

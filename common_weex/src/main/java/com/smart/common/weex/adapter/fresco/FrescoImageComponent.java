@@ -16,37 +16,30 @@
 // * specific language governing permissions and limitations
 // * under the License.
 // */
-//package com.smart.common.weex.adapter;
+//package com.smart.common.weex.adapter.fresco;
 //
-//import android.graphics.Bitmap;
+//import android.content.Context;
+//import android.support.annotation.NonNull;
+//import android.widget.ImageView;
+//import com.taobao.weex.WXSDKInstance;
+//import com.taobao.weex.ui.action.BasicComponentData;
+//import com.taobao.weex.ui.component.WXImage;
+//import com.taobao.weex.ui.component.WXVContainer;
 //
-//import com.squareup.picasso.Transformation;
+///**
+// * Created by sospartan on 8/19/16.
+// */
+//public class FrescoImageComponent extends WXImage {
 //
-//public class BlurTransformation implements Transformation {
-//
-//  private int mRadius;
-//
-//  public BlurTransformation(int radius) {
-//    mRadius = radius;
+//  public FrescoImageComponent(WXSDKInstance instance, WXVContainer parent, BasicComponentData basicComponentData) {
+//    super(instance, parent, basicComponentData);
 //  }
 //
-//  @Override public Bitmap transform(Bitmap source) {
-//    if(mRadius <= 0) {
-//      return source;
-//    }
-//    Bitmap bitmap;
-//    try {
-//      bitmap = BlurTool.blur(source, mRadius);
-//    }catch (Exception e){
-//      bitmap = source;
-//    }
-//    if(bitmap != source) {
-//      source.recycle();
-//    }
-//    return bitmap;
-//  }
+//  @Override
+//  protected ImageView initComponentHostView(@NonNull Context context) {
+//    FrescoImageView view = new FrescoImageView(context);
+//    view.setScaleType(ImageView.ScaleType.FIT_XY);
 //
-//  @Override public String key() {
-//    return "BlurTransformation(radius=" + mRadius + ")";
+//    return view;
 //  }
 //}
