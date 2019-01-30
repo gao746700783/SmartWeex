@@ -18,18 +18,30 @@
  */
 package com.smart.common.weex.ui;
 
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.graphics.PixelFormat;
 import android.graphics.Rect;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.support.annotation.CallSuper;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Toast;
 import com.alibaba.fastjson.JSONObject;
+import com.smart.common.weex.WXCommonManager;
 import com.smart.common.weex.util.AssertUtil;
+import com.smart.common.weex.util.CommonConstants;
+import com.smart.common.weex.util.hotreload.HotRefreshManager;
 import com.taobao.weex.IWXRenderListener;
 import com.taobao.weex.WXEnvironment;
 import com.taobao.weex.WXSDKInstance;
@@ -38,19 +50,29 @@ import com.taobao.weex.common.WXRenderStrategy;
 import com.taobao.weex.utils.WXUtils;
 
 import java.io.File;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Created by sospartan on 5/30/16.
  */
-public abstract class AbstractWeexActivity extends AppCompatActivity implements IWXRenderListener {
+public abstract class AbstractWeexActivity extends AppCompatActivity implements IWXRenderListener, Handler.Callback {
     protected static final String TAG = "AbstractWeexActivity";
 
     protected ViewGroup mContainer;
     protected WXSDKInstance mInstance;
 
     protected WXAnalyzerDelegate mWxAnalyzerDelegate;
+
+    //    protected String mUrl;
+    private String mWsUrl;
+    private Uri mUri;
+    private Handler mWXHandler;
+    private RefreshBroadcastReceiver mReceiver;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -61,6 +83,15 @@ public abstract class AbstractWeexActivity extends AppCompatActivity implements 
         mWxAnalyzerDelegate = new WXAnalyzerDelegate(this);
         mWxAnalyzerDelegate.onCreate();
         getWindow().setFormat(PixelFormat.TRANSLUCENT);
+
+        // debug 模式 可使用HotReload特性
+        if (WXCommonManager.getInstance().isDebug()) {
+            mWXHandler = new Handler(this);
+            HotRefreshManager.getInstance().setHandler(mWXHandler);
+
+            registerBroadcastReceiver();
+        }
+
     }
 
     protected void createWeexInstance() {
@@ -134,6 +165,8 @@ public abstract class AbstractWeexActivity extends AppCompatActivity implements 
         if (mWxAnalyzerDelegate != null) {
             mWxAnalyzerDelegate.onDestroy();
         }
+
+        unregisterBroadcastReceiver();
     }
 
     @Override
@@ -191,15 +224,17 @@ public abstract class AbstractWeexActivity extends AppCompatActivity implements 
         mContainer = container;
     }
 
+    // <!-------------------- renderPage ---------------------->
+
     protected String getPageName() {
         return TAG;
     }
 
-    protected void renderPage(String url,String template) {
-        renderPage(url,template, null);
+    protected void renderPage(String url, String template) {
+        renderPage(url, template, null);
     }
 
-    protected void renderPage(String url,String template, String jsonInitData) {
+    protected void renderPage(String url, String template, String jsonInitData) {
         AssertUtil.throwIfNull(mContainer, new RuntimeException("Can't render page, container is null"));
 
         Map<String, Object> options = new HashMap<>();
@@ -253,25 +288,111 @@ public abstract class AbstractWeexActivity extends AppCompatActivity implements 
                 WXRenderStrategy.APPEND_ASYNC);
     }
 
-    protected void renderWxPage(String url, String bundleUrl, String jsonInitData) {
-        Map<String, Object> options = new HashMap<>();
-        options.put(WXSDKInstance.BUNDLE_URL, bundleUrl);
+    protected void loadWxPage(String url, String bundleUrl, String jsonInitData) {
+//        this.setUrl(url);
+
+        mUri = Uri.parse(url);
 
         // find local js
         boolean isLocalPageExist = findWxPage(url);
 
         if (isLocalPageExist) {
-            renderPage(url,bundleUrl,jsonInitData);
+            startHotRefresh();
+            renderPage(url, bundleUrl, jsonInitData);
         } else {
-            renderPageByURL(url,jsonInitData);
+            startHotRefresh();
+            renderPageByURL(url, jsonInitData);
         }
     }
 
-    private boolean findWxPage(String url){
+    private boolean findWxPage(String url) {
+        return false;
+    }
 
+    // <!-------------------- hotReload ---------------------->
 
+    private void registerBroadcastReceiver() {
+        mReceiver = new RefreshBroadcastReceiver();
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(WXSDKInstance.ACTION_DEBUG_INSTANCE_REFRESH);
+        filter.addAction(WXSDKInstance.ACTION_INSTANCE_RELOAD);
+
+        registerReceiver(mReceiver, filter);
+    }
+
+    private void unregisterBroadcastReceiver() {
+        if (mReceiver != null) {
+            unregisterReceiver(mReceiver);
+        }
+        mReceiver = null;
+    }
+
+    public class RefreshBroadcastReceiver extends BroadcastReceiver {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (WXSDKInstance.ACTION_INSTANCE_RELOAD.equals(intent.getAction()) ||
+                    WXSDKInstance.ACTION_DEBUG_INSTANCE_REFRESH.equals(intent.getAction())) {
+                String myUrl = intent.getStringExtra("url");
+                Log.e("WXPageActivity", "RefreshBroadcastReceiver reload onReceive ACTION_DEBUG_INSTANCE_REFRESH mBundleUrl:" + myUrl + " mUri:" + mUri);
+
+                startHotRefresh();
+                loadWxPage(myUrl, null, null);
+            }
+        }
+    }
+
+    /**
+     * hot refresh
+     */
+    private void startHotRefresh() {
+        try {
+            URL url = new URL(mUri.toString());
+            String host = url.getHost();
+            //String query = url.getQuery();
+            int port = url.getPort();
+            //String port = TextUtils.isEmpty(query) ? "8081" : getUrlParam("port", query);
+            String wsUrl = "ws://" + host + ":" + port;
+            mWXHandler.obtainMessage(CommonConstants.HOT_REFRESH_CONNECT, 0, 0, wsUrl).sendToTarget();
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+        }
+    }
+
+//    private String getUrlParam(String key, String queryString) {
+//        String regex = "[?|&]?" + key + "=([^&]+)";
+//        Pattern p = Pattern.compile(regex);
+//        Matcher matcher = p.matcher(queryString);
+//        if (matcher.find()) {
+//            return matcher.group(1);
+//        } else {
+//            return "";
+//        }
+//    }
+
+    @Override
+    public boolean handleMessage(Message msg) {
+
+        switch (msg.what) {
+            case CommonConstants.HOT_REFRESH_CONNECT:
+                String wsUrl = msg.obj.toString();
+                Log.d(TAG, wsUrl);
+                HotRefreshManager.getInstance().connect(wsUrl);
+                break;
+            case CommonConstants.HOT_REFRESH_DISCONNECT:
+                HotRefreshManager.getInstance().disConnect();
+                break;
+            case CommonConstants.HOT_REFRESH_REFRESH:
+                loadWxPage(mUri.toString(), null, null);
+                break;
+            case CommonConstants.HOT_REFRESH_CONNECT_ERROR:
+                Toast.makeText(this, "hot refresh connect error!", Toast.LENGTH_SHORT).show();
+                break;
+            default:
+                break;
+        }
 
         return false;
     }
+
 
 }

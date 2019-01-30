@@ -40,6 +40,7 @@ public class WeexPageActivity extends AbstractWeexActivity {
         super.onCreate(savedInstanceState);
         setContainer((ViewGroup) findViewById(android.R.id.content));
 
+        // 测试使用 通过网页链接 超链接形式跳转到 weex页面
         Uri uri = getIntent().getData();
         if (uri != null) {
             // 完整的url信息
@@ -61,17 +62,19 @@ public class WeexPageActivity extends AbstractWeexActivity {
             // Query部分
             String query = uri.getQuery();
             Log.e(TAG, "query: " + query);
+
+
             //获取指定参数值
             String to = uri.getQueryParameter("to");
             Log.e(TAG, "jump to url: " + to);
 
-            renderWxPage(to, null, null);
+            loadWxPage(to, null, null);
         } else {
             Bundle extras = getIntent().getExtras();
             if (extras != null && extras.containsKey(EXTRA_URL)) {
                 String url = extras.getString(EXTRA_URL);
 
-                renderWxPage(url, null, null);
+                loadWxPage(url, null, null);
             }
         }
 

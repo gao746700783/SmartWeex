@@ -50,6 +50,8 @@ public final class WXCommonManager {
     private HashMap<String, Class<? extends WXModule>> mModules = new HashMap<>();
     private HashMap<String, Class<? extends WXComponent>> mComponents = new HashMap<>();
 
+    private boolean isDebug = false;
+
     public static WXCommonManager getInstance(){
         if (wxCommonManager == null){
             synchronized (WXCommonManager.class) {
@@ -126,12 +128,24 @@ public final class WXCommonManager {
         return mWeexPath;
     }
 
+    public void setWeexPath(String weexPath) {
+        this.mWeexPath = weexPath;
+    }
+
     public String getWeexConfigs() {
         return mWeexConfigs;
     }
 
     public void setWeexConfigs(String weexConfigs) {
         this.mWeexConfigs = weexConfigs;
+    }
+
+    public boolean isDebug() {
+        return isDebug;
+    }
+
+    public void setDebug(boolean debug) {
+        isDebug = debug;
     }
 
 }
