@@ -32,6 +32,7 @@ import android.support.annotation.CallSuper;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
@@ -69,7 +70,7 @@ public abstract class AbstractWeexActivity extends AppCompatActivity implements 
     protected WXAnalyzerDelegate mWxAnalyzerDelegate;
 
     //    protected String mUrl;
-    private String mWsUrl;
+//    private String mWsUrl;
     private Uri mUri;
     private Handler mWXHandler;
     private RefreshBroadcastReceiver mReceiver;
@@ -346,11 +347,12 @@ public abstract class AbstractWeexActivity extends AppCompatActivity implements 
      */
     private void startHotRefresh() {
         try {
+            mUri.getAuthority();
             URL url = new URL(mUri.toString());
             String host = url.getHost();
-            //String query = url.getQuery();
-            int port = url.getPort();
-            //String port = TextUtils.isEmpty(query) ? "8081" : getUrlParam("port", query);
+            String query = url.getQuery();
+//            int port = url.getPort();
+            String port = TextUtils.isEmpty(query) ? "8082" : getUrlParam("port", query);
             String wsUrl = "ws://" + host + ":" + port;
             mWXHandler.obtainMessage(CommonConstants.HOT_REFRESH_CONNECT, 0, 0, wsUrl).sendToTarget();
         } catch (MalformedURLException e) {
@@ -358,20 +360,20 @@ public abstract class AbstractWeexActivity extends AppCompatActivity implements 
         }
     }
 
-//    private String getUrlParam(String key, String queryString) {
-//        String regex = "[?|&]?" + key + "=([^&]+)";
-//        Pattern p = Pattern.compile(regex);
-//        Matcher matcher = p.matcher(queryString);
-//        if (matcher.find()) {
-//            return matcher.group(1);
-//        } else {
-//            return "";
-//        }
-//    }
+    private String getUrlParam(String key, String queryString) {
+        String regex = "[?|&]?" + key + "=([^&]+)";
+        Pattern p = Pattern.compile(regex);
+        Matcher matcher = p.matcher(queryString);
+        if (matcher.find()) {
+            return matcher.group(1);
+        } else {
+            return "";
+        }
+    }
 
     @Override
     public boolean handleMessage(Message msg) {
-
+        Log.d(TAG,"handleMessage called:"+msg.what);
         switch (msg.what) {
             case CommonConstants.HOT_REFRESH_CONNECT:
                 String wsUrl = msg.obj.toString();
@@ -382,6 +384,7 @@ public abstract class AbstractWeexActivity extends AppCompatActivity implements 
                 HotRefreshManager.getInstance().disConnect();
                 break;
             case CommonConstants.HOT_REFRESH_REFRESH:
+                createWeexInstance();
                 loadWxPage(mUri.toString(), null, null);
                 break;
             case CommonConstants.HOT_REFRESH_CONNECT_ERROR:
