@@ -64,13 +64,11 @@ import java.util.regex.Pattern;
 public abstract class AbstractWeexActivity extends AppCompatActivity implements IWXRenderListener, Handler.Callback {
     protected static final String TAG = "AbstractWeexActivity";
 
-    protected ViewGroup mContainer;
-    protected WXSDKInstance mInstance;
+    private ViewGroup mContainer;
+    private WXSDKInstance mInstance;
 
-    protected WXAnalyzerDelegate mWxAnalyzerDelegate;
+    private WXAnalyzerDelegate mWxAnalyzerDelegate;
 
-    //    protected String mUrl;
-//    private String mWsUrl;
     private Uri mUri;
     private Handler mWXHandler;
     private RefreshBroadcastReceiver mReceiver;
@@ -78,12 +76,15 @@ public abstract class AbstractWeexActivity extends AppCompatActivity implements 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        createWeexInstance();
+
+        reCreateWeexInstance();
         mInstance.onActivityCreate();
 
         mWxAnalyzerDelegate = new WXAnalyzerDelegate(this);
         mWxAnalyzerDelegate.onCreate();
-        getWindow().setFormat(PixelFormat.TRANSLUCENT);
+
+        // 设置默认的weex容器
+        setDefaultContainer();
 
         // debug 模式 可使用HotReload特性
         if (WXCommonManager.getInstance().isDebug()) {
@@ -95,7 +96,7 @@ public abstract class AbstractWeexActivity extends AppCompatActivity implements 
 
     }
 
-    protected void createWeexInstance() {
+    protected void reCreateWeexInstance() {
         destroyWeexInstance();
 
         Rect outRect = new Rect();
@@ -170,6 +171,15 @@ public abstract class AbstractWeexActivity extends AppCompatActivity implements 
         unregisterBroadcastReceiver();
     }
 
+    /**
+     * 设置默认weex页面容器，可重写
+     */
+    protected void setDefaultContainer() {
+        mContainer = findViewById(android.R.id.content);
+
+        getWindow().setFormat(PixelFormat.TRANSLUCENT);
+    }
+
     @Override
     public void onViewCreated(WXSDKInstance wxsdkInstance, View view) {
         View wrappedView = null;
@@ -185,10 +195,8 @@ public abstract class AbstractWeexActivity extends AppCompatActivity implements 
         }
     }
 
-
     @Override
     public void onRefreshSuccess(WXSDKInstance wxsdkInstance, int i, int i1) {
-
     }
 
     @Override
@@ -221,126 +229,63 @@ public abstract class AbstractWeexActivity extends AppCompatActivity implements 
         }
     }
 
-    protected final void setContainer(ViewGroup container) {
-        mContainer = container;
-    }
-
     // <!-------------------- renderPage ---------------------->
 
-    protected String getPageName() {
-        return TAG;
-    }
+    /**
+     * render page using url,and other things
+     *
+     * @param url          url            页面url
+     * @param bundleData   bundleData     获取模板相关信息 通过WXUtils.getBundleBanner
+     * @param jsonInitData jsonInitData
+     */
+    private void renderPage(String url, String bundleData, String jsonInitData) {
 
-    protected void renderPage(String url, String template) {
-        renderPage(url, template, null);
-    }
-
-    protected void renderPage(String url, String template, String jsonInitData) {
         AssertUtil.throwIfNull(mContainer, new RuntimeException("Can't render page, container is null"));
 
         Map<String, Object> options = new HashMap<>();
         options.put(WXSDKInstance.BUNDLE_URL, url);
-        // Set options.bundleDigest
-        try {
-            String banner = WXUtils.getBundleBanner(template);
-            JSONObject jsonObj = JSONObject.parseObject(banner);
-            String digest = null;
-            if (jsonObj != null) {
-                digest = jsonObj.getString(Constants.CodeCache.BANNER_DIGEST);
+
+        // check if template is empty
+        if (!TextUtils.isEmpty(bundleData)) {
+            // Set options.bundleDigest
+            try {
+                String banner = WXUtils.getBundleBanner(bundleData);
+                JSONObject jsonObj = JSONObject.parseObject(banner);
+                String digest = null;
+                if (jsonObj != null) {
+                    digest = jsonObj.getString(Constants.CodeCache.BANNER_DIGEST);
+                }
+                if (digest != null) {
+                    options.put(Constants.CodeCache.DIGEST, digest);
+                }
+            } catch (Throwable t) {
+                Log.e(TAG, t.getLocalizedMessage(), t);
             }
-            if (digest != null) {
-                options.put(Constants.CodeCache.DIGEST, digest);
-            }
-        } catch (Throwable t) {
+
+            //Set options.codeCachePath
+            String path = WXEnvironment.getFilesDir(getApplicationContext());
+            path += File.separator;
+            path += Constants.CodeCache.SAVE_PATH;
+            path += File.separator;
+            options.put(Constants.CodeCache.PATH, path);
+
+            mInstance.setTrackComponent(true);
+            mInstance.render(TAG, bundleData, options, jsonInitData, WXRenderStrategy.APPEND_ASYNC);
+            return;
         }
 
-        //Set options.codeCachePath
-        String path = WXEnvironment.getFilesDir(getApplicationContext());
-        path += File.separator;
-        path += Constants.CodeCache.SAVE_PATH;
-        path += File.separator;
-        options.put(Constants.CodeCache.PATH, path);
-
         mInstance.setTrackComponent(true);
-        mInstance.render(
-                getPageName(),
-                template,
-                options,
-                jsonInitData,
-                WXRenderStrategy.APPEND_ASYNC);
-    }
-
-    protected void renderPageByURL(String url) {
-        renderPageByURL(url, null);
-    }
-
-    protected void renderPageByURL(String url, String jsonInitData) {
-        AssertUtil.throwIfNull(mContainer, new RuntimeException("Can't render page, container is null"));
-
-        Map<String, Object> options = new HashMap<>();
-        options.put(WXSDKInstance.BUNDLE_URL, url);
-
-        mInstance.setTrackComponent(true);
-        mInstance.renderByUrl(
-                getPageName(),
-                url,
-                options,
-                jsonInitData,
-                WXRenderStrategy.APPEND_ASYNC);
+        mInstance.renderByUrl(TAG, url, options, jsonInitData, WXRenderStrategy.APPEND_ASYNC);
     }
 
     protected void loadWxPage(String url, String bundleUrl, String jsonInitData) {
-//        this.setUrl(url);
-
         mUri = Uri.parse(url);
 
-        // find local js
-        boolean isLocalPageExist = findWxPage(url);
-
-        if (isLocalPageExist) {
-            startHotRefresh();
-            renderPage(url, bundleUrl, jsonInitData);
-        } else {
-            startHotRefresh();
-            renderPageByURL(url, jsonInitData);
-        }
-    }
-
-    private boolean findWxPage(String url) {
-        return false;
+        startHotRefresh();
+        renderPage(url, bundleUrl, jsonInitData);
     }
 
     // <!-------------------- hotReload ---------------------->
-
-    private void registerBroadcastReceiver() {
-        mReceiver = new RefreshBroadcastReceiver();
-        IntentFilter filter = new IntentFilter();
-        filter.addAction(WXSDKInstance.ACTION_DEBUG_INSTANCE_REFRESH);
-        filter.addAction(WXSDKInstance.ACTION_INSTANCE_RELOAD);
-
-        registerReceiver(mReceiver, filter);
-    }
-
-    private void unregisterBroadcastReceiver() {
-        if (mReceiver != null) {
-            unregisterReceiver(mReceiver);
-        }
-        mReceiver = null;
-    }
-
-    public class RefreshBroadcastReceiver extends BroadcastReceiver {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            if (WXSDKInstance.ACTION_INSTANCE_RELOAD.equals(intent.getAction()) ||
-                    WXSDKInstance.ACTION_DEBUG_INSTANCE_REFRESH.equals(intent.getAction())) {
-                String myUrl = intent.getStringExtra("url");
-                Log.e("WXPageActivity", "RefreshBroadcastReceiver reload onReceive ACTION_DEBUG_INSTANCE_REFRESH mBundleUrl:" + myUrl + " mUri:" + mUri);
-
-                startHotRefresh();
-                loadWxPage(myUrl, null, null);
-            }
-        }
-    }
 
     /**
      * hot refresh
@@ -373,7 +318,7 @@ public abstract class AbstractWeexActivity extends AppCompatActivity implements 
 
     @Override
     public boolean handleMessage(Message msg) {
-        Log.d(TAG,"handleMessage called:"+msg.what);
+        Log.d(TAG, "handleMessage called:" + msg.what);
         switch (msg.what) {
             case CommonConstants.HOT_REFRESH_CONNECT:
                 String wsUrl = msg.obj.toString();
@@ -384,7 +329,7 @@ public abstract class AbstractWeexActivity extends AppCompatActivity implements 
                 HotRefreshManager.getInstance().disConnect();
                 break;
             case CommonConstants.HOT_REFRESH_REFRESH:
-                createWeexInstance();
+                reCreateWeexInstance();
                 loadWxPage(mUri.toString(), null, null);
                 break;
             case CommonConstants.HOT_REFRESH_CONNECT_ERROR:
@@ -397,5 +342,40 @@ public abstract class AbstractWeexActivity extends AppCompatActivity implements 
         return false;
     }
 
+    private void registerBroadcastReceiver() {
+        mReceiver = new RefreshBroadcastReceiver();
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(WXSDKInstance.ACTION_DEBUG_INSTANCE_REFRESH);
+        filter.addAction(WXSDKInstance.ACTION_INSTANCE_RELOAD);
+
+        registerReceiver(mReceiver, filter);
+    }
+
+    private void unregisterBroadcastReceiver() {
+        if (mReceiver != null) {
+            unregisterReceiver(mReceiver);
+        }
+        mReceiver = null;
+    }
+
+    /**
+     * RefreshBroadcastReceiver
+     * <p>
+     * 暂时未发现和 HotRefresh相关
+     */
+    private class RefreshBroadcastReceiver extends BroadcastReceiver {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (WXSDKInstance.ACTION_INSTANCE_RELOAD.equals(intent.getAction()) ||
+                    WXSDKInstance.ACTION_DEBUG_INSTANCE_REFRESH.equals(intent.getAction())) {
+                String myUrl = intent.getStringExtra("url");
+                Log.e(TAG, "RefreshBroadcastReceiver reload onReceive ACTION_DEBUG_INSTANCE_REFRESH mBundleUrl:"
+                        + myUrl + " mUri:" + mUri);
+
+                startHotRefresh();
+                loadWxPage(myUrl, null, null);
+            }
+        }
+    }
 
 }

@@ -33,12 +33,12 @@ import java.util.List;
  */
 public class WeexPageActivity extends AbstractWeexActivity {
 
+    private static final String TAG = "WeexPageActivity";
     public static final String EXTRA_URL = "extra_url";
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContainer((ViewGroup) findViewById(android.R.id.content));
 
         // 测试使用 通过网页链接 超链接形式跳转到 weex页面
         Uri uri = getIntent().getData();
@@ -78,16 +78,6 @@ public class WeexPageActivity extends AbstractWeexActivity {
             }
         }
 
-    }
-
-    @Override
-    public void onRenderSuccess(WXSDKInstance instance, int width, int height) {
-        super.onRenderSuccess(instance, width, height);
-    }
-
-    @Override
-    public void onException(WXSDKInstance instance, String errCode, String msg) {
-        super.onException(instance, errCode, msg);
     }
 
 }

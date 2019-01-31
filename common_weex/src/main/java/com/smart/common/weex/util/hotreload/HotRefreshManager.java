@@ -37,6 +37,7 @@ import okio.Buffer;
 import okio.BufferedSource;
 
 /**
+ * HotRefreshManager using WebSocket
  */
 public class HotRefreshManager {
 
@@ -63,6 +64,7 @@ public class HotRefreshManager {
         mWebSocket.close(1000, "activity finish!");
       } catch (IOException e) {
         e.printStackTrace();
+        return false;
       }
     }
     return true;
