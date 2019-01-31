@@ -1,45 +1,8 @@
-apply plugin: 'com.android.library'
-
-android {
-    compileSdkVersion rootProject.ext.compileSdkVersion
-    buildToolsVersion rootProject.ext.buildToolsVersion
-    defaultConfig {
-        minSdkVersion rootProject.ext.minSdkVersion
-        targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
-    }
-
-    buildTypes {
-        debug {
-            ndk {
-                abiFilters 'armeabi', 'armeabi-v7a', 'x86'
-            }
-        }
-        release {
-            ndk {
-                abiFilters 'armeabi', 'armeabi-v7a'
-            }
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-        }
-    }
-}
-
-dependencies {
-    api "com.android.support:appcompat-v7:${supportVersion}"
-    api "com.android.support:support-v4:${supportVersion}"
-    api "com.android.support:recyclerview-v7:${supportVersion}"
-    // weex sdk and fastjson
-    api 'com.taobao.android:weex_sdk:0.18.0@aar'
-    implementation 'com.alibaba:fastjson:1.1.46.android'
-}
-
 apply plugin: 'com.github.dcendents.android-maven'
 apply plugin: 'com.jfrog.bintray'
 
-group = 'com.dede.weexlib'
-version = '0.0.6'
+group = 'com.smart.weex'
+version = '0.0.1'
 
 install {
     repositories {
@@ -56,8 +19,8 @@ install {
 
                 developers {
                     developer {
-                        name 'dede'
-                        email 'dede863116814@gmail.com'
+                        name 'gao746700783'
+                        email 'gao746700783@163.com'
                     }
                 }
 
@@ -103,8 +66,8 @@ bintray {
     key = properties.getProperty("bintray.apikey")
     configurations = ['archives']
     pkg {
-        repo = 'AndroidLib'
-        name = 'weexlib'
+        repo = 'maven'
+        name = 'ismartweex'
         desc = 'A quick integration of Weex lib to Android'
         websiteUrl = siteUrl
         issueTrackerUrl = issueUrl

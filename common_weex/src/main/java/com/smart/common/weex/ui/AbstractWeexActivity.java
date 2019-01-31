@@ -44,6 +44,7 @@ import com.smart.common.weex.util.AssertUtil;
 import com.smart.common.weex.util.CommonConstants;
 import com.smart.common.weex.util.hotreload.HotRefreshManager;
 import com.taobao.weex.IWXRenderListener;
+import com.taobao.weex.RenderContainer;
 import com.taobao.weex.WXEnvironment;
 import com.taobao.weex.WXSDKInstance;
 import com.taobao.weex.common.Constants;
@@ -167,6 +168,9 @@ public abstract class AbstractWeexActivity extends AppCompatActivity implements 
         if (mWxAnalyzerDelegate != null) {
             mWxAnalyzerDelegate.onDestroy();
         }
+
+
+        mWXHandler.obtainMessage(CommonConstants.HOT_REFRESH_DISCONNECT).sendToTarget();
 
         unregisterBroadcastReceiver();
     }
